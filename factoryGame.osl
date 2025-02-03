@@ -207,13 +207,13 @@ Input = {
     local v = key.pressed
     switch key (
       case "mouse left"
-        v = mouse_left
+        local v = mouse_left
         break
       case "mouse middle"
-        v = mouse_middle
+        local v = mouse_middle
         break
       case "mouse right"
-        v = mouse_right
+        local v = mouse_right
         break
     )
     return v
@@ -244,6 +244,8 @@ Input = {
     Input.bind_key("place", "mouse left")
     Input.bind_key("eyedrop", "mouse middle")
     Input.bind_key("destroy", "mouse right")
+    
+    Input.bind_key("ui_interact", "mouse left")
     
     Input.bind_key("console", "`")
     
@@ -333,14 +335,18 @@ Entities = {
   },
   buildingHandler: {
     update: def(id) -> (
+      
     ),
     draw: def() -> (
-      draw_icon("c#fff w 1 square 0 0 10 10", 1, Vec.roundVec(Utils.unTranslate([mouse_x,mouse_y])))
+      if (cursorItem == ItemStack.empty) (
+        draw_icon("c#fff w 1 square 0 0 10 10", 1, Vec.roundVec(Utils.unTranslate([mouse_x,mouse_y])))
+      )
     ),
   },
   gameHandler: {
     draw: def() -> (
       UI.hotbar.main()
+      UI.draw_item(cursorItem, mouse_x, mouse_y, 2)
     ),
   },
 }
@@ -355,18 +361,36 @@ UI = {
       square hotbar_length - 6 56 12 : c#222
       
       each i item items (
-        UI.hotbar.slot(i, item, items.len)
+        local touching = UI.hotbar.slot(i, item, items.len)
+        if touching and Input.get_key_down("ui_interact") (
+          if cursorItem["id"] == null (
+            cursorItem = items[i]
+            local inv = Entity.get(player).inventory
+            inv.slots[i] = ItemStack.empty
+            Entity.set_key(player, "inventory", inv)
+          ) else (
+            local inv = Entity.get(player).inventory
+            inv.slots[i] = cursorItem
+            Entity.set_key(player, "inventory", inv)
+            log cursorItem
+            cursorItem = ItemStack.empty
+          )
+        )
       )
     ),
     slot: def(i, item, len) -> (
       loc 9999 -2 i - .5 - (len * .5) * 62.5 40
       square 45 45 12 : c#444
+      local touching = mouse_touching
       
-      UI.draw_item(item, x_position, y_position, 2, x_position + 15, y_position - 20, 10)
+      UI.draw_item(item, x_position, y_position, 2)
+      return touching
     ),
   },
   draw_item: def(item, x, y, size, tx, ty, tsize) -> (
-    tsize ??= 10
+    local tsize ??= 10
+    local tx ??= x + (1.5 * tsize)
+    local ty ??= y - (2 * tsize)
     if item["id"] != null (
       local icn = Resources.items[item["id"]]
       local icn ??= "c #f0f w 4 square 0 0 7 7 line -7 -7 7 7"
@@ -395,6 +419,7 @@ ScenePresets = {
     gameHandler = Entity.new({
       type: "gameHandler"
     })
+    cursorItem = ItemStack.empty
   ),
   dev: def() -> (
     scene_loadInto("base")
@@ -424,6 +449,8 @@ Items = {
 }
 
 ItemStack = {
+  empty: {id: null, amount: 0},
+  
   new: def(id, amount) -> (
     return {
       id: id,
