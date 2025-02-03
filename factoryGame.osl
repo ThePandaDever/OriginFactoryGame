@@ -69,10 +69,10 @@ def update_scene() (
 
 console_data = []
 console = {
-  "open": false,
-  "t": 0,
+  open: false,
+  t: 0,
   
-  "send": def(a,b,c,d,e,f,type) -> (
+  send: def(a,b,c,d,e,f,type) -> (
     temp = []
     if a != null (; temp.append(a); )
     if b != null (; temp.append(b); )
@@ -82,23 +82,23 @@ console = {
     if f != null (; temp.append(f); )
     console_data.append([temp.join(" "),type])
   ),
-  "log": def(a,b,c,d,e,f) -> (
+  log: def(a,b,c,d,e,f) -> (
     console.send(a,b,c,d,e,f,"log")
   ),
-  "warn": def(a,b,c,d,e,f) -> (
+  warn: def(a,b,c,d,e,f) -> (
     console.send(a,b,c,d,e,f,"warn")
   ),
-  "error": def(a,b,c,d,e,f) -> (
+  error: def(a,b,c,d,e,f) -> (
     console.send(a,b,c,d,e,f,"error")
   ),
   
-  "update": def() -> (
+  update: def() -> (
     if Input.get_key_down("console") (
       console.open = console.open.not
       log "hi"
     )
   ),
-  "draw": def() -> (
+  draw: def() -> (
     console.t += (console.open ? 1 0) - console.t * delta_time * 30
     
     local width = 300
@@ -147,7 +147,7 @@ console = {
 }
 
 Entity = {
-  "new": def(data) -> (
+  new: def(data) -> (
     if scene == null (
       error "cannot create entity while scene is null"
     )
@@ -156,17 +156,16 @@ Entity = {
     data["type"] ??= "unknown"
     data["scale"] ??= 1
     local id = newID()
-    log id
     scene["entities"][id] = data
     return id
   ),
-  "get": def(id) -> (
+  get: def(id) -> (
     if scene == null (
       error "cannot get entity while scene is null"
     )
     return scene["entities"][id]
   ),
-  "set": def(id, data) -> (
+  set: def(id, data) -> (
     if scene == null (
       error "cannot set entity while scene is null"
     )
@@ -175,7 +174,7 @@ Entity = {
 }
 
 Utils = {
-  "translate": def(position, cam) -> (
+  translate: def(position, cam) -> (
     local cam ??= main_camera
     local cam = Entity.get(cam)
     return [
@@ -184,7 +183,7 @@ Utils = {
       cam.scale
     ]
   ),
-  "unTranslate": def(position, cam) -> (
+  unTranslate: def(position, cam) -> (
     local cam ??= main_camera
     local cam = Entity.get(cam)
     return [
@@ -195,10 +194,10 @@ Utils = {
 }
 
 Input = {
-  "bindings": {},
-  "axes": {},
+  bindings: {},
+  axes: {},
   
-  "get_key_raw": def(key) -> (
+  get_key_raw: def(key) -> (
     local v = key.pressed
     switch key (
       case "mouse left"
@@ -213,22 +212,22 @@ Input = {
     )
     return v
   ),
-  "get_key": def(key) -> (
+  get_key: def(key) -> (
     return Input.get_key_raw(Input.bindings[key])
   ),
-  "get_key_down": def(key) -> (
+  get_key_down: def(key) -> (
     return Input.get_key(key) and Input.lastPressed[key].not
   ),
-  "get_axis": def(axis) -> (
+  get_axis: def(axis) -> (
     local axis = Input.axes[this.axis]
     return Input.get_key(axis[2]) - Input.get_key(axis[1])
   ),
   
-  "clear": def() -> (
+  clear: def() -> (
     Input.bindings = {}
     Input.axes = {}
   ),
-  "load": def() -> (
+  load: def() -> (
     Input.clear()
     
     Input.bind_key("left", "a")
@@ -245,39 +244,39 @@ Input = {
     Input.bind_axis("horizontal", "left", "right")
     Input.bind_axis("vertical", "down", "up")
   ),
-  "bind_key": def(binding, key) -> (
+  bind_key: def(binding, key) -> (
     Input.bindings[binding] = key
   ),
-  "bind_axis": def(axis, negative, positive) -> (
+  bind_axis: def(axis, negative, positive) -> (
     Input.axes[axis] = [negative, positive]
   ),
-  "update": def() -> (
+  update: def() -> (
     Input.lastPressed = Input.currentPressed
     each key Input.bindings.getKeys() (
       Input.currentPressed[key] = Input.get_key(key)
     )
   ),
   
-  "currentPressed": {}
+  currentPressed: {}
 }
 
 Vec = {
-  "add": def(a,b) -> (
+  add: def(a,b) -> (
     a = Vec.toVec(a)
     b = Vec.toVec(b)
     return [a[1] + b[1],a[2] + b[2]]
   ),
-  "sub": def(a,b) -> (
+  sub: def(a,b) -> (
     a = Vec.toVec(a)
     b = Vec.toVec(b)
     return [a[1] - b[1],a[2] - b[2]]
   ),
-  "mul": def(a,b) -> (
+  mul: def(a,b) -> (
     a = Vec.toVec(a)
     b = Vec.toVec(b)
     return [a[1] * b[1],a[2] * b[2]]
   ),
-  "div": def(a,b) -> (
+  div: def(a,b) -> (
     a = Vec.toVec(a)
     b = Vec.toVec(b)
     if b[1] == 0 (
@@ -288,21 +287,21 @@ Vec = {
     )
     return [a[1] / b[1],a[2] / b[2]]
   ),
-  "lerp": def(a,b,t) -> (
+  lerp: def(a,b,t) -> (
     a = Vec.toVec(a)
     b = Vec.toVec(b)
     return [b[1] - a[1] * t + a[1],b[2] - a[2] * t + a[2]]
   ),
-  "mag": def(v) -> (
+  mag: def(v) -> (
     return ((v[1] ^ 2) + (v[2] ^ 2)).sqrt()
   ),
-  "normalize": def(v) -> (
+  normalize: def(v) -> (
     return Vec.div(v,Vec.mag(v))
   ),
-  "roundVec": def(v) -> (
+  roundVec: def(v) -> (
     return [v[1].round(),v[2].round()]
   ),
-  "toVec": def(v) -> (
+  toVec: def(v) -> (
     if v.type == "number" (
       v = [v,v]
     )
@@ -311,8 +310,8 @@ Vec = {
 }
 
 Entities = {
-  "player": {
-    "update": def(id) -> (
+  player: {
+    update: def(id) -> (
       local ent = Entity.get(id)
       ent["position"][1] += Input.get_axis("horizontal") * delta_time * 10
       ent["position"][2] += Input.get_axis("vertical") * delta_time * 10
@@ -322,27 +321,27 @@ Entities = {
       cam.position = Vec.lerp(cam.position, ent.position, delta_time * 10)
       Entity.set(main_camera, cam)
     ),
-    "draw": def(ent) -> (
+    draw: def(ent) -> (
       draw_icon("c #fff w 20 dot 0 0", 1, ent.position)
     ),
   },
-  "buildingHandler": {
-    "update": def(id) -> (
+  buildingHandler: {
+    update: def(id) -> (
     ),
-    "draw": def() -> (
+    draw: def() -> (
       draw_icon("c#fff w 1 square 0 0 10 10", 1, Vec.roundVec(Utils.unTranslate([mouse_x,mouse_y])))
     ),
   },
-  "gameHandler": {
-    "draw": def() -> (
+  gameHandler: {
+    draw: def() -> (
       UI.hotbar.main()
     ),
   },
 }
 
 UI = {
-  "hotbar": {    
-    "main": def() -> (
+  hotbar: {    
+    main: def() -> (
       local hotbar_length = UI.hotbar.items.len * 62.5 - 32.5
       loc 9999 -2 0 40
       square hotbar_length 30 40 : c#222
@@ -351,7 +350,7 @@ UI = {
         UI.hotbar.slot(i, item)
       )
     ),
-    "slot": def(i, item) -> (
+    slot: def(i, item) -> (
       loc 9999 -2 i - .5 - (UI.hotbar.items.len * .5) * 62.5 40
       square 30 30 27 : c#444
       text item 10 : c#fff
@@ -360,48 +359,74 @@ UI = {
 }
 
 ScenePresets = {
-  "base": def() -> (
-    player = Entity.new({"type":"player","player":"client"})
-    buildingHandler = Entity.new({"type":"buildingHandler"})
-    gameHandler = Entity.new({"type":"gameHandler"})
+  base: def() -> (
+    player = Entity.new({
+      type: "player",
+      player: "client",
+      inventory: Inventory.add(
+        Inventory.new(),
+        ItemStack.new("test1",5)
+      )
+    })
+    buildingHandler = Entity.new({
+      type: "buildingHandler"
+    })
+    gameHandler = Entity.new({
+      type: "gameHandler"
+    })
   ),
-  "dev": def() -> (
+  dev: def() -> (
     scene_loadInto("base")
-    main_camera = Entity.new({"type":"camera","scale":30})
+    main_camera = Entity.new({
+      type: "camera",
+      scale: 30
+    })
   ),
 }
 
 Items = {
   list: {},
   
-  "new": def(id, name, desc, stackSize) -> (
+  new: def(id, name, desc, stackSize) -> (
     local stackSize ??= 128
     Items.list[id] = {
-      "name": name,
-      "desc": desc,
-      "stackSize": stackSize
+      name: name,
+      desc: desc,
+      stackSize: stackSize
     }
   ),
   
-  "register": def() -> (
+  register: def() -> (
     Items.new("test1","Test Item", "silly test item :3")
     Items.new("test2","Test Item but cooler", "cooler test item")
   ),
 }
 
 ItemStack = {
-  "new": def(id, amount) -> (
+  new: def(id, amount) -> (
     return {
-      "id": id,
-      "amount": amount
+      id: id,
+      amount: amount
     }
   ),
 }
 
+Inventory = {
+  new: def(slots) -> (
+    local slots ??= 1
+    return {
+      slots: 1.newArray().fill(ItemStack.new(null, 0))
+    }
+  ),
+  add: def(inventory, itemStack) -> (
+    
+  )
+}
+
 Resources = {
-  "items": {
-    "test": "c #f00 w 5 square 0 0 4 4",
-    "test2": "c #0f0 w 5 square 0 0 4 4",
+  items: {
+    test: "c #f00 w 5 square 0 0 4 4",
+    test2: "c #0f0 w 5 square 0 0 4 4",
   }
 }
 
