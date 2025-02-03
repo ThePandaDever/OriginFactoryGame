@@ -1,0 +1,425 @@
+
+window "show"
+window "dimensions" 1400 800
+
+def newID() (
+  this.t = ""
+  loop 10 (
+    this.t += random(97,122).chr()
+  )
+  return this.t
+)
+def lerp(a,b,t) (
+  return b - a * t + a
+)
+
+def scene_clear() (
+  scene = {"entities":{}}
+)
+def scene_load(this.scene) (
+  scene_clear()
+  scene_loadInto(this.scene)
+)
+def scene_loadInto(this.scene) (
+  if this.scene.type == "string" (
+    if ScenePresets.getKeys().contains(this.scene) (
+      s = ScenePresets[this.scene]
+      s()
+    ) else (
+      error "unknown scene" + this.scene
+    )
+  )
+)
+
+def draw_entity(this.entId) (
+  draw_entity_raw(scene["entities"][this.entId])
+)
+def draw_entity_raw(this.ent) (
+  if Entities.getKeys().contains(this.ent["type"]) (
+    draw = Entities[this.ent["type"]]["draw"]
+    draw(this.ent)
+  )
+)
+def draw_scene(this.scene) (
+  if this.scene == null (
+    return
+  )
+  each this.entId this.scene["entities"].getKeys() (
+    draw_entity(this.entId)
+  )
+)
+def draw_icon(this.icn,this.scale,this.position) (
+  this.position ??= [0,0]
+  this.position = utils.translate(this.position)
+  goto this.position[1] this.position[2]
+  icon this.icn this.scale * .05 * this.position[3]
+)
+
+def update_scene() (
+  each this.entId scene["entities"].getKeys() (
+    this.ent = scene["entities"][this.entId]
+    if Entities.getKeys().contains(this.ent["type"]) (
+      update = Entities[this.ent["type"]]["update"]
+      if update != null (
+        update(this.entId)
+      )
+    )
+  )
+)
+
+console_data = []
+console = {
+  "open": false,
+  "t": 0,
+  
+  "send": def(a,b,c,d,e,f,type) -> (
+    temp = []
+    if a != null (; temp.append(a); )
+    if b != null (; temp.append(b); )
+    if c != null (; temp.append(c); )
+    if d != null (; temp.append(d); )
+    if e != null (; temp.append(e); )
+    if f != null (; temp.append(f); )
+    console_data.append([temp.join(" "),type])
+  ),
+  "log": def(a,b,c,d,e,f) -> (
+    console.send(a,b,c,d,e,f,"log")
+  ),
+  "warn": def(a,b,c,d,e,f) -> (
+    console.send(a,b,c,d,e,f,"warn")
+  ),
+  "error": def(a,b,c,d,e,f) -> (
+    console.send(a,b,c,d,e,f,"error")
+  ),
+  
+  "update": def() -> (
+    if Input.get_key_down("console") (
+      console.open = console.open.not
+      log "hi"
+    )
+  ),
+  "draw": def() -> (
+    console.t += (console.open ? 1 0) - console.t * delta_time * 30
+    
+    this.width = 300
+    this.textSize = 10
+    loc -2 9999 lerp(this.width * .5 + 15, this.width * -.5 - 15, console.t) -20
+    square this.width window.height - 75 15 : c#222
+    
+    if x_position - (this.width / 2) - 8 < window.right (
+      frame x_position - (this.width / 2) - 10 window.top - 50 x_position + (this.width / 2) + 10 window.bottom + 10 (
+        this.y = frame.top - 1
+        this.over = 0
+        each msg console_data (
+          this.copyText = msg[1]
+          msg[1] = msg[1].wrapText(this.width / this.textSize - 4)
+          this.y -= msg[1].split(newline).len - 1 * this.textSize * 2.3 * .5 + 25
+          goto 0 this.y
+          square this.width - 10 msg[1].split(newline).len * this.textSize * 2.3 15 : c#333
+          if mouse_touching (
+            cursor "pointer"
+            if onclick (
+              clipboard "set" this.copyText
+            )
+          )
+          change_y msg[1].split(newline).len - 1 * this.textSize * 2.3 * .5
+          change_x this.width * -.5 + 15
+          this.icn = {
+            "log": "w 18 c #fff dot 0 0 w 3 line 0 -5 8 -8 line 5 0 8 -8 dot 6 -6 w 4 c #000 line 0 5 0 0 dot 0 -5",
+            "warn": "w 5 c #ffa600 line -8 -8 0 8 cont 8 -8 cont -8 -8 w 11 dot 0 -2 w 5 c #000 line 0 5 0 0 dot 0 -6",
+            "error": "c #ff2a00 w 3 line -3 8 3 8 cont 8 3 cont 8 -3 cont 3 -8 cont -3 -8 cont -8 -3 cont -8 3 cont -3 8 w 17 dot 0 0 c #000 w 4 dot 0 -6 line 0 6 0 0",
+          }
+          this.icn = this.icn[msg[2]]
+          icon this.icn 1
+          change_x 20
+          text msg[1] this.textSize : c#fff
+          this.y -= msg[1].split(newline).len - 1 * this.textSize * 2.3 * .5 + 20
+          if this.y + 10 < frame.bottom (
+            this.over ++
+          )
+        )
+        loop this.over (
+          shifted = console_data.shift()
+        )
+      )
+    )
+  ),
+}
+
+Entity = {
+  "new": def(this.data) -> (
+    if scene == null (
+      error "cannot create entity while scene is null"
+    )
+    this.data ??= {}
+    this.data["position"] ??= [0,0]
+    this.data["type"] ??= "unknown"
+    this.data["scale"] ??= 1
+    this.id = newID()
+    scene["entities"][this.id] = this.data
+    return this.id
+  ),
+  "get": def(this.id) -> (
+    if scene == null (
+      error "cannot get entity while scene is null"
+    )
+    return scene["entities"][this.id]
+  ),
+  "set": def(this.id, this.data) -> (
+    if scene == null (
+      error "cannot set entity while scene is null"
+    )
+    scene["entities"][this.id] = this.data
+  ),
+}
+
+Utils = {
+  "translate": def(this.position, this.cam) -> (
+    this.cam ??= main_camera
+    this.cam = Entity.get(this.cam)
+    return [
+      this.position[1] - this.cam.position[1] * this.cam.scale,
+      this.position[2] - this.cam.position[2] * this.cam.scale,
+      this.cam.scale
+    ]
+  ),
+  "unTranslate": def(this.position, this.cam) -> (
+    this.cam ??= main_camera
+    this.cam = Entity.get(this.cam)
+    return [
+      this.position[1] / this.cam.scale + this.cam.position[1],
+      this.position[2] / this.cam.scale + this.cam.position[2]
+    ]
+  ),
+}
+
+Input = {
+  "bindings": {},
+  "axes": {},
+  
+  "get_key_raw": def(this.key) -> (
+    this.v = this.key.pressed
+    switch this.key (
+      case "mouse left"
+        this.v = mouse_left
+        break
+      case "mouse middle"
+        this.v = mouse_middle
+        break
+      case "mouse right"
+        this.v = mouse_right
+        break
+    )
+    return this.v
+  ),
+  "get_key": def(this.key) -> (
+    return Input.get_key_raw(Input.bindings[this.key])
+  ),
+  "get_key_down": def(this.key) -> (
+    return Input.get_key(this.key) and Input.lastPressed[this.key].not
+  ),
+  "get_axis": def(this.axis) -> (
+    this.axis = Input.axes[this.axis]
+    return Input.get_key(this.axis[2]) - Input.get_key(this.axis[1])
+  ),
+  
+  "clear": def() -> (
+    Input.bindings = {}
+    Input.axes = {}
+  ),
+  "load": def() -> (
+    Input.clear()
+    
+    Input.bind_key("left", "a")
+    Input.bind_key("right", "d")
+    Input.bind_key("down", "s")
+    Input.bind_key("up", "w")
+    
+    Input.bind_key("place", "mouse left")
+    Input.bind_key("eyedrop", "mouse middle")
+    Input.bind_key("destroy", "mouse right")
+    
+    Input.bind_key("console", "`")
+    
+    Input.bind_axis("horizontal", "left", "right")
+    Input.bind_axis("vertical", "down", "up")
+  ),
+  "bind_key": def(this.binding,this.key) -> (
+    Input.bindings[this.binding] = this.key
+  ),
+  "bind_axis": def(this.axis,this.negative,this.positive) -> (
+    Input.axes[this.axis] = [this.negative,this.positive]
+  ),
+  "update": def() -> (
+    Input.lastPressed = Input.currentPressed
+    each this.key Input.bindings.getKeys() (
+      Input.currentPressed[this.key] = Input.get_key(this.key)
+    )
+  ),
+  
+  "currentPressed": {}
+}
+
+Vec = {
+  "add": def(a,b) -> (
+    a = Vec.toVec(a)
+    b = Vec.toVec(b)
+    return [a[1] + b[1],a[2] + b[2]]
+  ),
+  "sub": def(a,b) -> (
+    a = Vec.toVec(a)
+    b = Vec.toVec(b)
+    return [a[1] - b[1],a[2] - b[2]]
+  ),
+  "mul": def(a,b) -> (
+    a = Vec.toVec(a)
+    b = Vec.toVec(b)
+    return [a[1] * b[1],a[2] * b[2]]
+  ),
+  "div": def(a,b) -> (
+    a = Vec.toVec(a)
+    b = Vec.toVec(b)
+    if b[1] == 0 (
+      b[1] = 99999999
+    )
+    if b[2] == 0 (
+      b[2] = 99999999
+    )
+    return [a[1] / b[1],a[2] / b[2]]
+  ),
+  "lerp": def(a,b,t) -> (
+    a = Vec.toVec(a)
+    b = Vec.toVec(b)
+    return [b[1] - a[1] * t + a[1],b[2] - a[2] * t + a[2]]
+  ),
+  "mag": def(v) -> (
+    return ((v[1] ^ 2) + (v[2] ^ 2)).sqrt()
+  ),
+  "normalize": def(v) -> (
+    return Vec.div(v,Vec.mag(v))
+  ),
+  "roundVec": def(v) -> (
+    return [v[1].round(),v[2].round()]
+  ),
+  "toVec": def(v) -> (
+    if v.type == "number" (
+      v = [v,v]
+    )
+    return v
+  )
+}
+
+Entities = {
+  "player": {
+    "update": def(this.id) -> (
+      this.ent = Entity.get(this.id)
+      this.ent["position"][1] += Input.get_axis("horizontal") * delta_time * 10
+      this.ent["position"][2] += Input.get_axis("vertical") * delta_time * 10
+      Entity.set(this.id, this.ent)
+      
+      this.cam = Entity.get(main_camera)
+      this.cam.position = Vec.lerp(this.cam.position, this.ent.position, delta_time * 10)
+      Entity.set(main_camera, this.cam)
+    ),
+    "draw": def(this.ent) -> (
+      draw_icon("c #fff w 20 dot 0 0", 1, this.ent.position)
+    ),
+  },
+  "buildingHandler": {
+    "update": def(this.id) -> (
+    ),
+    "draw": def() -> (
+      draw_icon("c#fff w 1 square 0 0 10 10", 1, Vec.roundVec(Utils.unTranslate([mouse_x,mouse_y])))
+    ),
+  },
+  "gameHandler": {
+    "draw": def() -> (
+      UI.hotbar.main()
+    ),
+  },
+}
+
+UI = {
+  "hotbar": {
+    "items": [
+      "test",
+      "crazy",
+    ],
+    
+    "main": def() -> (
+      this.hotbar_length = UI.hotbar.items.len * 62.5 - 32.5
+      loc 9999 -2 0 40
+      square this.hotbar_length 30 40 : c#222
+      each this.i this.item UI.hotbar.items (
+        UI.hotbar.slot(this.i, this.item)
+      )
+    ),
+    "slot": def(this.i, this.item) -> (
+      loc 9999 -2 this.i - .5 - (UI.hotbar.items.len * .5) * 62.5 40
+      square 30 30 27 : c#444
+      text this.item 10 : c#fff
+    ),
+  },
+}
+
+ScenePresets = {
+  "base": def() -> (
+    player = Entity.new({"type":"player","player":"client"})
+    buildingHandler = Entity.new({"type":"buildingHandler"})
+    gameHandler = Entity.new({"type":"gameHandler"})
+  ),
+  "dev": def() -> (
+    scene_loadInto("base")
+    main_camera = Entity.new({"type":"camera","scale":30})
+  ),
+}
+
+Items = {
+  list: {},
+  
+  "new": def(this.id, this.name, this.desc, this.stackSize) -> (
+    this.stackSize ??= 128
+    Items.list[this.id] = {
+      "name": this.name,
+      "desc": this.desc,
+      "stackSize": this.stackSize
+    }
+  ),
+  
+  "register": def() -> (
+    Items.new("test1","Test Item", "silly test item :3")
+    Items.new("test2","Test Item but cooler", "cooler test item")
+  ),
+}
+
+ItemStack = {
+  "new": def(this.id, this.amount) -> (
+    return {
+      "id": this.id,
+      "amount": this.amount
+    }
+  ),
+}
+
+Resources = {
+  "items": {
+    "test": "c #f00 w 5 square 0 0 4 4",
+    "test2": "c #0f0 w 5 square 0 0 4 4",
+  }
+}
+
+scene = null
+main_camera = null
+
+Input.load()
+Items.register()
+
+scene_load("dev")
+mainloop:
+  Input.update()
+  
+  update_scene()
+  draw_scene(scene)
+  
+  console.update()
+  console.draw()
