@@ -171,6 +171,12 @@ Entity = {
     )
     scene["entities"][id] = data
   ),
+  set_key: def(id, key, value) -> (
+    if scene == null (
+      error "cannot set entity key while scene is null"
+    )
+    scene["entities"][id][key] = value
+  )
 }
 
 Utils = {
@@ -342,20 +348,38 @@ Entities = {
 UI = {
   hotbar: {    
     main: def() -> (
-      local hotbar_length = UI.hotbar.items.len * 62.5 - 32.5
+      local items = Entity.get(player).inventory.slots.trim(1,9)
+      
+      local hotbar_length = items.len * 62.5
       loc 9999 -2 0 40
-      square hotbar_length 30 40 : c#222
-      local items = []
+      square hotbar_length - 6 56 12 : c#222
+      
       each i item items (
-        UI.hotbar.slot(i, item)
+        UI.hotbar.slot(i, item, items.len)
       )
     ),
-    slot: def(i, item) -> (
-      loc 9999 -2 i - .5 - (UI.hotbar.items.len * .5) * 62.5 40
-      square 30 30 27 : c#444
-      text item 10 : c#fff
+    slot: def(i, item, len) -> (
+      loc 9999 -2 i - .5 - (len * .5) * 62.5 40
+      square 45 45 12 : c#444
+      
+      UI.draw_item(item, x_position, y_position, 2, x_position + 15, y_position - 20, 10)
     ),
   },
+  draw_item: def(item, x, y, size, tx, ty, tsize) -> (
+    tsize ??= 10
+    if item["id"] != null (
+      local icn = Resources.items[item["id"]]
+      local icn ??= "c #f0f w 4 square 0 0 7 7 line -7 -7 7 7"
+      goto x y
+      icon icn size
+      
+      local txt = item["amount"] == 1 ? "" item["amount"]
+      goto tx ty + 1
+      square txt.len * tsize - 2 10 8 : c#ff9100
+      goto tx + (txt.len * tsize * -.5) ty
+      text txt tsize : c#fff
+    )
+  )
 }
 
 ScenePresets = {
@@ -363,10 +387,7 @@ ScenePresets = {
     player = Entity.new({
       type: "player",
       player: "client",
-      inventory: Inventory.add(
-        Inventory.new(),
-        ItemStack.new("test1",5)
-      )
+      inventory: Inventory.new(6 * 9)
     })
     buildingHandler = Entity.new({
       type: "buildingHandler"
@@ -406,7 +427,7 @@ ItemStack = {
   new: def(id, amount) -> (
     return {
       id: id,
-      amount: amount
+      amount: amount.toNum()
     }
   ),
 }
@@ -415,17 +436,92 @@ Inventory = {
   new: def(slots) -> (
     local slots ??= 1
     return {
-      slots: 1.newArray().fill(ItemStack.new(null, 0))
+      slots: slots.newArray().fill(ItemStack.new(null, 0))
     }
   ),
-  add: def(inventory, itemStack) -> (
-    
+  give: def(inventory, remaining) -> (
+    local inv = inventory
+    each sloti slot inv.slots (
+      if remaining["amount"] != 0 (
+        local stackSize = Items.list[remaining["id"]]["stackSize"]
+        if remaining["id"] == slot["id"] (
+          if slot["amount"] + remaining["amount"] <= stackSize (
+            slot["amount"] += remaining["amount"]
+            remaining["amount"] = 0
+          ) else if slot["amount"] < stackSize (
+            remaining["amount"] -= stackSize - slot["amount"]
+            slot["amount"] = stackSize
+          )
+        )
+        if slot["id"] == null (
+          if remaining["amount"] > stackSize (
+            slot = ItemStack.new(remaining["id"],stackSize)
+            remaining["amount"] -= stackSize
+          ) else (
+            slot = ItemStack.new(remaining["id"],remaining["amount"])
+            remaining["amount"] = 0
+          )
+        )
+      )
+      inv.slots[sloti] = slot
+    )
+    return inv
+  ),
+  take: def(inventory, remaining) -> (
+    local inv = inventory
+    local slots = inv.slots.reverse()
+    each sloti slot slots (
+      if slot["id"] == remaining["id"] and slot["amount"] > 0 (
+        local amount = min(remaining["amount"],slot["amount"])
+        slot["amount"] -= amount
+        remaining["amount"] -= amount
+      )
+      if slot["amount"] == 0 (
+        slot["id"] = null
+      )
+      slots[sloti] = slot
+    )
+    inv.slots = slots.reverse()
+    return inv
+  ),
+  amount: def(inventory, id) -> (
+    local amt = 0
+    each slot inventory.slots (
+      if slot["id"] == id (
+        local amt += slot["amount"]
+      )
+    )
+    return amt
+  ),
+  has: def(inventory, id) -> (
+    return Inventory.amount(inventory, id) > 0
+  ),
+  hasItems: def(inventory, itemStack) -> (
+    return Inventory.amount(inventory, itemStack["id"]) >= itemStack["amount"]
+  )
+}
+
+PlayerInventory = {
+  give: def(items) -> (
+    Entity.set_key(player, "inventory", Inventory.give(Entity.get(player).inventory, items))
+  ),
+  take: def(items) -> (
+    Entity.set_key(player, "inventory", Inventory.take(Entity.get(player).inventory, items))
+  ),
+  amount: def(items) -> (
+    return Inventory.amount(Entity.get(player).inventory, items)
+  ),
+  has: def(id) -> (
+    return Inventory.has(Entity.get(player).inventory, id)
+  ),
+  hasItems: def(items) -> (
+    return Inventory.hasItems(Entity.get(player).inventory, items)
   )
 }
 
 Resources = {
   items: {
-    test: "c #f00 w 5 square 0 0 4 4",
+    test1: "c #f00 w 5 square 0 0 4 4 w 0 square 0 0 10 10",
     test2: "c #0f0 w 5 square 0 0 4 4",
   }
 }
@@ -437,6 +533,11 @@ Input.load()
 Items.register()
 
 scene_load("dev")
+
+PlayerInventory.give(ItemStack.new("test2",57))
+PlayerInventory.give(ItemStack.new("test1",725))
+PlayerInventory.take(ItemStack.new("test1",600))
+
 mainloop:
   Input.update()
   
@@ -445,3 +546,4 @@ mainloop:
   
   console.update()
   console.draw()
+import "win-buttons"
