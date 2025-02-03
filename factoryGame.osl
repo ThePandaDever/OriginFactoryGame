@@ -3,11 +3,11 @@ window "show"
 window "dimensions" 1400 800
 
 def newID() (
-  this.t = ""
+  local t = ""
   loop 10 (
-    this.t += random(97,122).chr()
+    local t ++= random(97,122).chr()
   )
-  return this.t
+  return t
 )
 def lerp(a,b,t) (
   return b - a * t + a
@@ -16,52 +16,52 @@ def lerp(a,b,t) (
 def scene_clear() (
   scene = {"entities":{}}
 )
-def scene_load(this.scene) (
+def scene_load(scene) (
   scene_clear()
-  scene_loadInto(this.scene)
+  scene_loadInto(scene)
 )
-def scene_loadInto(this.scene) (
-  if this.scene.type == "string" (
-    if ScenePresets.getKeys().contains(this.scene) (
-      s = ScenePresets[this.scene]
+def scene_loadInto(scene) (
+  if scene.type == "string" (
+    if ScenePresets.getKeys().contains(scene) (
+      local s = ScenePresets[scene]
       s()
     ) else (
-      error "unknown scene" + this.scene
+      error "unknown scene" + scene
     )
   )
 )
 
-def draw_entity(this.entId) (
-  draw_entity_raw(scene["entities"][this.entId])
+def draw_entity(entId) (
+  draw_entity_raw(scene["entities"][entId])
 )
-def draw_entity_raw(this.ent) (
-  if Entities.getKeys().contains(this.ent["type"]) (
-    draw = Entities[this.ent["type"]]["draw"]
-    draw(this.ent)
+def draw_entity_raw(ent) (
+  if Entities.getKeys().contains(ent["type"]) (
+    draw = Entities[ent["type"]]["draw"]
+    draw(ent)
   )
 )
-def draw_scene(this.scene) (
-  if this.scene == null (
+def draw_scene(scene) (
+  if scene == null (
     return
   )
-  each this.entId this.scene["entities"].getKeys() (
-    draw_entity(this.entId)
+  each entId scene["entities"].getKeys() (
+    draw_entity(entId)
   )
 )
-def draw_icon(this.icn,this.scale,this.position) (
-  this.position ??= [0,0]
-  this.position = utils.translate(this.position)
-  goto this.position[1] this.position[2]
-  icon this.icn this.scale * .05 * this.position[3]
+def draw_icon(icn, scale, position) (
+  local position ??= [0,0]
+  local position = utils.translate(position)
+  goto position[1] position[2]
+  icon icn scale * .05 * position[3]
 )
 
 def update_scene() (
-  each this.entId scene["entities"].getKeys() (
-    this.ent = scene["entities"][this.entId]
-    if Entities.getKeys().contains(this.ent["type"]) (
-      update = Entities[this.ent["type"]]["update"]
+  each entId scene["entities"].getKeys() (
+    local ent = scene["entities"][entId]
+    if Entities.getKeys().contains(ent["type"]) (
+      update = Entities[ent["type"]]["update"]
       if update != null (
-        update(this.entId)
+        update(entId)
       )
     )
   )
@@ -101,44 +101,44 @@ console = {
   "draw": def() -> (
     console.t += (console.open ? 1 0) - console.t * delta_time * 30
     
-    this.width = 300
-    this.textSize = 10
-    loc -2 9999 lerp(this.width * .5 + 15, this.width * -.5 - 15, console.t) -20
-    square this.width window.height - 75 15 : c#222
+    local width = 300
+    local textSize = 10
+    loc -2 9999 lerp(width * .5 + 15, width * -.5 - 15, console.t) -20
+    square width window.height - 75 15 : c#222
     
-    if x_position - (this.width / 2) - 8 < window.right (
-      frame x_position - (this.width / 2) - 10 window.top - 50 x_position + (this.width / 2) + 10 window.bottom + 10 (
-        this.y = frame.top - 1
-        this.over = 0
+    if x_position - (width / 2) - 8 < window.right (
+      frame x_position - (width / 2) - 10 window.top - 50 x_position + (width / 2) + 10 window.bottom + 10 (
+        local y = frame.top - 1
+        local over = 0
         each msg console_data (
-          this.copyText = msg[1]
-          msg[1] = msg[1].wrapText(this.width / this.textSize - 4)
-          this.y -= msg[1].split(newline).len - 1 * this.textSize * 2.3 * .5 + 25
-          goto 0 this.y
-          square this.width - 10 msg[1].split(newline).len * this.textSize * 2.3 15 : c#333
+          local copyText = msg[1]
+          msg[1] = msg[1].wrapText(width / textSize - 4)
+          y -= msg[1].split(newline).len - 1 * textSize * 2.3 * .5 + 25
+          goto 0 y
+          square width - 10 msg[1].split(newline).len * textSize * 2.3 15 : c#333
           if mouse_touching (
             cursor "pointer"
             if onclick (
-              clipboard "set" this.copyText
+              clipboard "set" copyText
             )
           )
-          change_y msg[1].split(newline).len - 1 * this.textSize * 2.3 * .5
-          change_x this.width * -.5 + 15
-          this.icn = {
+          change_y msg[1].split(newline).len - 1 * textSize * 2.3 * .5
+          change_x width * -.5 + 15
+          local icn = {
             "log": "w 18 c #fff dot 0 0 w 3 line 0 -5 8 -8 line 5 0 8 -8 dot 6 -6 w 4 c #000 line 0 5 0 0 dot 0 -5",
             "warn": "w 5 c #ffa600 line -8 -8 0 8 cont 8 -8 cont -8 -8 w 11 dot 0 -2 w 5 c #000 line 0 5 0 0 dot 0 -6",
             "error": "c #ff2a00 w 3 line -3 8 3 8 cont 8 3 cont 8 -3 cont 3 -8 cont -3 -8 cont -8 -3 cont -8 3 cont -3 8 w 17 dot 0 0 c #000 w 4 dot 0 -6 line 0 6 0 0",
           }
-          this.icn = this.icn[msg[2]]
-          icon this.icn 1
+          local icn = icn[msg[2]]
+          icon icn 1
           change_x 20
-          text msg[1] this.textSize : c#fff
-          this.y -= msg[1].split(newline).len - 1 * this.textSize * 2.3 * .5 + 20
-          if this.y + 10 < frame.bottom (
-            this.over ++
+          text msg[1] textSize : c#fff
+          y -= msg[1].split(newline).len - 1 * textSize * 2.3 * .5 + 20
+          if y + 10 < frame.bottom (
+            over ++
           )
         )
-        loop this.over (
+        loop over (
           shifted = console_data.shift()
         )
       )
@@ -147,48 +147,49 @@ console = {
 }
 
 Entity = {
-  "new": def(this.data) -> (
+  "new": def(data) -> (
     if scene == null (
       error "cannot create entity while scene is null"
     )
-    this.data ??= {}
-    this.data["position"] ??= [0,0]
-    this.data["type"] ??= "unknown"
-    this.data["scale"] ??= 1
-    this.id = newID()
-    scene["entities"][this.id] = this.data
-    return this.id
+    local data ??= {}
+    data["position"] ??= [0,0]
+    data["type"] ??= "unknown"
+    data["scale"] ??= 1
+    local id = newID()
+    log id
+    scene["entities"][id] = data
+    return id
   ),
-  "get": def(this.id) -> (
+  "get": def(id) -> (
     if scene == null (
       error "cannot get entity while scene is null"
     )
-    return scene["entities"][this.id]
+    return scene["entities"][id]
   ),
-  "set": def(this.id, this.data) -> (
+  "set": def(id, data) -> (
     if scene == null (
       error "cannot set entity while scene is null"
     )
-    scene["entities"][this.id] = this.data
+    scene["entities"][id] = data
   ),
 }
 
 Utils = {
-  "translate": def(this.position, this.cam) -> (
-    this.cam ??= main_camera
-    this.cam = Entity.get(this.cam)
+  "translate": def(position, cam) -> (
+    local cam ??= main_camera
+    local cam = Entity.get(cam)
     return [
-      this.position[1] - this.cam.position[1] * this.cam.scale,
-      this.position[2] - this.cam.position[2] * this.cam.scale,
-      this.cam.scale
+      position[1] - cam.position[1] * cam.scale,
+      position[2] - cam.position[2] * cam.scale,
+      cam.scale
     ]
   ),
-  "unTranslate": def(this.position, this.cam) -> (
-    this.cam ??= main_camera
-    this.cam = Entity.get(this.cam)
+  "unTranslate": def(position, cam) -> (
+    local cam ??= main_camera
+    local cam = Entity.get(cam)
     return [
-      this.position[1] / this.cam.scale + this.cam.position[1],
-      this.position[2] / this.cam.scale + this.cam.position[2]
+      position[1] / cam.scale + cam.position[1],
+      position[2] / cam.scale + cam.position[2]
     ]
   ),
 }
@@ -197,30 +198,30 @@ Input = {
   "bindings": {},
   "axes": {},
   
-  "get_key_raw": def(this.key) -> (
-    this.v = this.key.pressed
-    switch this.key (
+  "get_key_raw": def(key) -> (
+    local v = key.pressed
+    switch key (
       case "mouse left"
-        this.v = mouse_left
+        v = mouse_left
         break
       case "mouse middle"
-        this.v = mouse_middle
+        v = mouse_middle
         break
       case "mouse right"
-        this.v = mouse_right
+        v = mouse_right
         break
     )
-    return this.v
+    return v
   ),
-  "get_key": def(this.key) -> (
-    return Input.get_key_raw(Input.bindings[this.key])
+  "get_key": def(key) -> (
+    return Input.get_key_raw(Input.bindings[key])
   ),
-  "get_key_down": def(this.key) -> (
-    return Input.get_key(this.key) and Input.lastPressed[this.key].not
+  "get_key_down": def(key) -> (
+    return Input.get_key(key) and Input.lastPressed[key].not
   ),
-  "get_axis": def(this.axis) -> (
-    this.axis = Input.axes[this.axis]
-    return Input.get_key(this.axis[2]) - Input.get_key(this.axis[1])
+  "get_axis": def(axis) -> (
+    local axis = Input.axes[this.axis]
+    return Input.get_key(axis[2]) - Input.get_key(axis[1])
   ),
   
   "clear": def() -> (
@@ -244,16 +245,16 @@ Input = {
     Input.bind_axis("horizontal", "left", "right")
     Input.bind_axis("vertical", "down", "up")
   ),
-  "bind_key": def(this.binding,this.key) -> (
-    Input.bindings[this.binding] = this.key
+  "bind_key": def(binding, key) -> (
+    Input.bindings[binding] = key
   ),
-  "bind_axis": def(this.axis,this.negative,this.positive) -> (
-    Input.axes[this.axis] = [this.negative,this.positive]
+  "bind_axis": def(axis, negative, positive) -> (
+    Input.axes[axis] = [negative, positive]
   ),
   "update": def() -> (
     Input.lastPressed = Input.currentPressed
-    each this.key Input.bindings.getKeys() (
-      Input.currentPressed[this.key] = Input.get_key(this.key)
+    each key Input.bindings.getKeys() (
+      Input.currentPressed[key] = Input.get_key(key)
     )
   ),
   
@@ -311,22 +312,22 @@ Vec = {
 
 Entities = {
   "player": {
-    "update": def(this.id) -> (
-      this.ent = Entity.get(this.id)
-      this.ent["position"][1] += Input.get_axis("horizontal") * delta_time * 10
-      this.ent["position"][2] += Input.get_axis("vertical") * delta_time * 10
-      Entity.set(this.id, this.ent)
+    "update": def(id) -> (
+      local ent = Entity.get(id)
+      ent["position"][1] += Input.get_axis("horizontal") * delta_time * 10
+      ent["position"][2] += Input.get_axis("vertical") * delta_time * 10
+      Entity.set(id, ent)
       
-      this.cam = Entity.get(main_camera)
-      this.cam.position = Vec.lerp(this.cam.position, this.ent.position, delta_time * 10)
-      Entity.set(main_camera, this.cam)
+      local cam = Entity.get(main_camera)
+      cam.position = Vec.lerp(cam.position, ent.position, delta_time * 10)
+      Entity.set(main_camera, cam)
     ),
-    "draw": def(this.ent) -> (
-      draw_icon("c #fff w 20 dot 0 0", 1, this.ent.position)
+    "draw": def(ent) -> (
+      draw_icon("c #fff w 20 dot 0 0", 1, ent.position)
     ),
   },
   "buildingHandler": {
-    "update": def(this.id) -> (
+    "update": def(id) -> (
     ),
     "draw": def() -> (
       draw_icon("c#fff w 1 square 0 0 10 10", 1, Vec.roundVec(Utils.unTranslate([mouse_x,mouse_y])))
@@ -340,24 +341,20 @@ Entities = {
 }
 
 UI = {
-  "hotbar": {
-    "items": [
-      "test",
-      "crazy",
-    ],
-    
+  "hotbar": {    
     "main": def() -> (
-      this.hotbar_length = UI.hotbar.items.len * 62.5 - 32.5
+      local hotbar_length = UI.hotbar.items.len * 62.5 - 32.5
       loc 9999 -2 0 40
-      square this.hotbar_length 30 40 : c#222
-      each this.i this.item UI.hotbar.items (
-        UI.hotbar.slot(this.i, this.item)
+      square hotbar_length 30 40 : c#222
+      local items = []
+      each i item items (
+        UI.hotbar.slot(i, item)
       )
     ),
-    "slot": def(this.i, this.item) -> (
-      loc 9999 -2 this.i - .5 - (UI.hotbar.items.len * .5) * 62.5 40
+    "slot": def(i, item) -> (
+      loc 9999 -2 i - .5 - (UI.hotbar.items.len * .5) * 62.5 40
       square 30 30 27 : c#444
-      text this.item 10 : c#fff
+      text item 10 : c#fff
     ),
   },
 }
@@ -377,12 +374,12 @@ ScenePresets = {
 Items = {
   list: {},
   
-  "new": def(this.id, this.name, this.desc, this.stackSize) -> (
-    this.stackSize ??= 128
-    Items.list[this.id] = {
-      "name": this.name,
-      "desc": this.desc,
-      "stackSize": this.stackSize
+  "new": def(id, name, desc, stackSize) -> (
+    local stackSize ??= 128
+    Items.list[id] = {
+      "name": name,
+      "desc": desc,
+      "stackSize": stackSize
     }
   ),
   
@@ -393,10 +390,10 @@ Items = {
 }
 
 ItemStack = {
-  "new": def(this.id, this.amount) -> (
+  "new": def(id, amount) -> (
     return {
-      "id": this.id,
-      "amount": this.amount
+      "id": id,
+      "amount": amount
     }
   ),
 }
