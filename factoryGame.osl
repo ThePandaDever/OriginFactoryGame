@@ -364,16 +364,17 @@ UI = {
         local touching = UI.hotbar.slot(i, item, items.len)
         if touching and Input.get_key_down("ui_interact") (
           if cursorItem["id"] == null (
+            local org = cursorItem
             cursorItem = items[i]
             local inv = Entity.get(player).inventory
-            inv.slots[i] = ItemStack.empty
+            inv.slots[i] = org
             Entity.set_key(player, "inventory", inv)
           ) else (
             local inv = Entity.get(player).inventory
+            local org = inv.slots[i]
             inv.slots[i] = cursorItem
             Entity.set_key(player, "inventory", inv)
-            log cursorItem
-            cursorItem = ItemStack.empty
+            cursorItem = org
           )
         )
       )
@@ -434,7 +435,7 @@ Items = {
   list: {},
   
   new: def(id, name, desc, stackSize) -> (
-    local stackSize ??= 128
+    local stackSize ??= 256
     Items.list[id] = {
       name: name,
       desc: desc,
@@ -546,11 +547,24 @@ PlayerInventory = {
   )
 }
 
+Building = {
+  list: {},
+  
+  new: def(id, update, draw) -> (
+    list[id] = {
+      
+    }
+  )
+}
+
 Resources = {
   items: {
     test1: "c #f00 w 5 square 0 0 4 4 w 0 square 0 0 10 10",
     test2: "c #0f0 w 5 square 0 0 4 4",
-  }
+  },
+  buildings: {
+    testBuilding: "c #fff w 1 square 0 0 10 10",
+  },
 }
 
 scene = null
@@ -563,7 +577,6 @@ scene_load("dev")
 
 PlayerInventory.give(ItemStack.new("test2",57))
 PlayerInventory.give(ItemStack.new("test1",725))
-PlayerInventory.take(ItemStack.new("test1",600))
 
 mainloop:
   Input.update()
